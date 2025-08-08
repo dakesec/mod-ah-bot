@@ -53,36 +53,55 @@ AuctionHouseBot::~AuctionHouseBot()
 
 uint32 AuctionHouseBot::getStackSizeForItem(ItemTemplate const* itemProto) const
 {
-    // Determine the stack ratio based on class type
-    if (itemProto == NULL)
+    if (!itemProto)
         return 1;
 
-    // TODO: Move this to a config
-    uint32 stackRatio = 0;
+    uint32 maxStack = itemProto->GetMaxStackSize();
+    if (maxStack <= 1)
+        return 1;
+
+    // Always-single check based on RandomStackRatio = 0
     switch (itemProto->Class)
     {
-    case ITEM_CLASS_CONSUMABLE:     stackRatio = RandomStackRatioConsumable; break;
-    case ITEM_CLASS_CONTAINER:      stackRatio = RandomStackRatioContainer; break;
-    case ITEM_CLASS_WEAPON:         stackRatio = RandomStackRatioWeapon; break;
-    case ITEM_CLASS_GEM:            stackRatio = RandomStackRatioGem; break;
-    case ITEM_CLASS_REAGENT:        stackRatio = RandomStackRatioReagent; break;
-    case ITEM_CLASS_ARMOR:          stackRatio = RandomStackRatioArmor; break;
-    case ITEM_CLASS_PROJECTILE:     stackRatio = RandomStackRatioProjectile; break;
-    case ITEM_CLASS_TRADE_GOODS:    stackRatio = RandomStackRatioTradeGood; break;
-    case ITEM_CLASS_GENERIC:        stackRatio = RandomStackRatioGeneric; break;
-    case ITEM_CLASS_RECIPE:         stackRatio = RandomStackRatioRecipe; break;
-    case ITEM_CLASS_QUIVER:         stackRatio = RandomStackRatioQuiver; break;
-    case ITEM_CLASS_QUEST:          stackRatio = RandomStackRatioQuest; break;
-    case ITEM_CLASS_KEY:            stackRatio = RandomStackRatioKey; break;
-    case ITEM_CLASS_MISC:           stackRatio = RandomStackRatioMisc; break;
-    case ITEM_CLASS_GLYPH:          stackRatio = RandomStackRatioGlyph; break;
-    default:                        stackRatio = 0; break;
+        case ITEM_CLASS_CONTAINER:
+            if (RandomStackRatioContainer == 0) return 1; break;
+        case ITEM_CLASS_WEAPON:
+            if (RandomStackRatioWeapon == 0) return 1; break;
+        case ITEM_CLASS_ARMOR:
+            if (RandomStackRatioArmor == 0) return 1; break;
+        case ITEM_CLASS_RECIPE:
+            if (RandomStackRatioRecipe == 0) return 1; break;
+        case ITEM_CLASS_QUIVER:
+            if (RandomStackRatioQuiver == 0) return 1; break;
+        case ITEM_CLASS_QUEST:
+            if (RandomStackRatioQuest == 0) return 1; break;
+        case ITEM_CLASS_KEY:
+            if (RandomStackRatioKey == 0) return 1; break;
+        case ITEM_CLASS_GLYPH:
+            if (RandomStackRatioGlyph == 0) return 1; break;
+        default:
+            break;
     }
 
-    if (stackRatio > urand(0, 99))
-        return urand(1, itemProto->GetMaxStackSize());
-    else
-        return 1;
+    // Occasionally post small stacks under LowerStackSize
+    const uint32 SMALL_STACK_PERCENT = 15;
+    if (SMALL_STACK_PERCENT > 0 && urand(1, 100) <= SMALL_STACK_PERCENT)
+    {
+        uint32 cap = std::min<uint32>(LowerStackSize - 1, maxStack);
+        return urand(1, cap);
+    }
+
+    // Pull from config-based stack sizes
+    uint32 candidates[3];
+    uint32 n = 0;
+    if (maxStack >= LowerStackSize)  candidates[n++] = LowerStackSize;
+    if (maxStack >= MedianStackSize) candidates[n++] = MedianStackSize;
+    if (maxStack >= UpperStackSize)  candidates[n++] = UpperStackSize;
+
+    if (n == 0)
+        return std::min<uint32>(LowerStackSize - 1, maxStack);
+
+    return candidates[urand(0, n - 1)];
 }
 
 void AuctionHouseBot::calculateItemValue(ItemTemplate const* itemProto, uint64& outBidPrice, uint64& outBuyoutPrice)
@@ -838,6 +857,9 @@ void AuctionHouseBot::InitializeConfiguration()
     RandomStackRatioKey = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Key", 10);
     RandomStackRatioMisc = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Misc", 100);
     RandomStackRatioGlyph = GetRandomStackValue("AuctionHouseBot.RandomStackRatio.Glyph", 0);
+	LowerStackSize  = sConfigMgr->GetOption<uint32>("AuctionHouseBot.LowerStack", 25);
+    MedianStackSize = sConfigMgr->GetOption<uint32>("AuctionHouseBot.MedianStack", 50);
+    UpperStackSize  = sConfigMgr->GetOption<uint32>("AuctionHouseBot.UpperStack", 100);
 
     // List Proportions
     ListProportionConsumable = sConfigMgr->GetOption<uint32>("AuctionHouseBot.ListProportion.Consumable", 2);

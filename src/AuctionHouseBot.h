@@ -222,6 +222,9 @@ private:
     uint32 PriceMinimumCenterBaseKey;
     uint32 PriceMinimumCenterBaseMisc;
     uint32 PriceMinimumCenterBaseGlyph;
+	uint32 LowerStackSize;
+    uint32 MedianStackSize;
+    uint32 UpperStackSize;
     std::unordered_map<uint32, uint64> PriceMinimumCenterBaseOverridesByItemID;
     float ItemLevelPriceMultiplier;
 

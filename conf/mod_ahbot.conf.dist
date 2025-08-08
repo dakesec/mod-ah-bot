@@ -234,6 +234,11 @@ AuctionHouseBot.PriceMultiplier.ItemLevel = 0
 #                    Glyph: 0 (100% single stack size)
 ###############################################################################
 
+# AuctionHouseBot stack size limits
+AuctionHouseBot.LowerStack = 25
+AuctionHouseBot.MedianStack = 50
+AuctionHouseBot.UpperStack = 100
+
 AuctionHouseBot.RandomStackRatio.Consumable = 20
 AuctionHouseBot.RandomStackRatio.Container = 0
 AuctionHouseBot.RandomStackRatio.Weapon = 0
